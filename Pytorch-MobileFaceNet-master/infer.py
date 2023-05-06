@@ -15,7 +15,7 @@ from utils.utils import add_arguments, print_arguments
 
 parser = argparse.ArgumentParser(description=__doc__)
 add_arg = functools.partial(add_arguments, argparser=parser)
-add_arg('image_path',               str,     'dataset/test.jpg',                 '预测图片路径')
+add_arg('image_path',               str,     'face_db/於佳威.jpg',                 '预测图片路径')
 add_arg('face_db_path',             str,     'face_db',                          '人脸库路径')
 add_arg('threshold',                float,   0.664017,                                '判断相识度的阈值')
 # add_arg('mobilefacenet_model_path', str,     'mobilefacenet_scripted.pt',     'MobileFaceNet预测模型的路径')
@@ -40,17 +40,18 @@ class Predictor:
 
     def load_face_db(self, face_db_path):
         faces_db = {}
-        for path in os.listdir(face_db_path):
-            name = os.path.basename(path).split('.')[0]
-            image_path = os.path.join(face_db_path, path)
-            img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), -1) # 从指定的内存缓存中读取数据，并把数据转换(解码)成图像格式
-            imgs, _ = self.mtcnn.infer_image(img)
-            if imgs is None or len(imgs) > 1:
-                print('人脸库中的 %s 图片包含不是1张人脸，自动跳过该图片' % image_path)
-                continue
-            imgs = self.process(imgs)
-            feature = self.infer(imgs[0])
-            faces_db[name] = feature[0][0]
+        for dir_path in os.listdir(face_db_path):
+            for path in os.listdir(os.path.join(args.face_db_path, dir_path)):
+                name = os.path.basename(path).split('.')[0]
+                image_path = os.path.join(face_db_path, dir_path, path)
+                img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), -1) # 从指定的内存缓存中读取数据，并把数据转换(解码)成图像格式
+                imgs, _ = self.mtcnn.infer_image(img)
+                if imgs is None or len(imgs) > 1:
+                    print('人脸库中的 %s 图片包含不是1张人脸，自动跳过该图片' % image_path)
+                    continue
+                imgs = self.process(imgs)
+                feature = self.infer(imgs[0])
+                faces_db[name] = feature[0][0]
         return faces_db
 
     @staticmethod
@@ -83,8 +84,7 @@ class Predictor:
             features.append(feature)
         return features
 
-    def recognition(self, image_path):
-        img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), -1)
+    def recognition(self, img):
         s = time.time()
         imgs, boxes = self.mtcnn.infer_image(img)
         print('人脸检测时间：%dms' % int((time.time() - s) * 1000))
@@ -125,8 +125,7 @@ class Predictor:
         return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
     # 画出人脸框和关键点
-    def draw_face(self, image_path, boxes_c, names):
-        img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), -1)
+    def draw_face(self, img, boxes_c, names):
         if boxes_c is not None:
             for i in range(boxes_c.shape[0]):
                 bbox = boxes_c[i, :4]
@@ -137,16 +136,19 @@ class Predictor:
                               (corpbbox[2], corpbbox[3]), (0, 0, 0), 1)
                 # 判别为人脸的名字
                 img = self.add_text(img, name, corpbbox[0], corpbbox[1] -15, color=(255, 0, 255), size=12)
-        cv2.imwrite('result.jpg', img)
-        cv2.imshow("result", img)
-        cv2.waitKey(0)
+        basepath = os.path.dirname(__file__)  # 当前文件所在路径
+        cv2.imwrite(os.path.join('static/images', 'result.jpg'), img)
+        # cv2.imwrite('result.jpg', img)
+        # cv2.imshow("result", img)
+        # cv2.waitKey(0)
 
 
 if __name__ == '__main__':
     predictor = Predictor(args.mtcnn_model_path, args.mobilefacenet_model_path, args.face_db_path, threshold=args.threshold)
     start = time.time()
-    boxes, names = predictor.recognition(args.image_path)
+    test_img = cv2.imdecode(np.fromfile(args.image_path, dtype=np.uint8), -1)
+    boxes, names = predictor.recognition(test_img)
     print('预测的人脸位置：', boxes.astype(np.int_).tolist())
     print('识别的人脸名称：', names)
     print('总识别时间：%dms' % int((time.time() - start) * 1000))
-    predictor.draw_face(args.image_path, boxes, names)
+    predictor.draw_face(test_img, boxes, names)

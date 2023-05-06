@@ -75,7 +75,6 @@ def train():
     device = torch.device("cuda")
     # 获取模型
     model = MobileFaceNet()
-    # model = torch.jit.load('E:\CODE\pythonProject\Pytorch-MobileFaceNet-master\Pytorch-MobileFaceNet-master\mobilefacenet_scripted.pt')
     metric_fc = ArcNet(512, train_dataset.num_classes)
     if len(device_ids) > 1:
         model = DataParallel(model, device_ids=device_ids, output_device=device_ids[0])
