@@ -29,7 +29,7 @@ add_arg('learning_rate',    float,  1e-3,                     '初始学习率�
 add_arg('train_root_path',  str,    'dataset/train_data',     '训练数据的根目录')
 add_arg('test_list_path',   str,    'dataset/lfw_test.txt',   '测试数据的数据列表路径')
 add_arg('save_model',       str,    'save_model/',            '模型保存的路径')
-add_arg('resume',           str,    'save_model/epoch_39',                     '恢复训练，当为None则不使用恢复模型')
+add_arg('resume',           str,    'save_model/epoch_42',                     '恢复训练，当为None则不使用恢复模型')
 args = parser.parse_args()
 
 
